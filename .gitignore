@@ -1,4 +1,5 @@
 *.iml
 .idea/
 *.tfstate
+.terraform.lock.hcl
 .terraform/

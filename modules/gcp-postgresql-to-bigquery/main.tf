@@ -38,13 +38,14 @@ resource "random_password" "sql_user_datastream_password" {
   length = 42
 }
 
-resource "google_sql_user" "sql_user" {
+resource "google_sql_user" "sql_user_datastream" {
   name     = "bigquery-datastream"
   password = random_password.sql_user_datastream_password.result
   instance = data.google_sql_database_instance.sql_instance.name
 }
 
 resource "postgresql_role" "sql_replication_role" {
+  depends_on = [google_sql_user.postgres]
   name        = "replicator"
   replication = true
 }
@@ -63,6 +64,7 @@ locals {
 }
 
 resource "postgresql_grant" "sql_user_permissions" {
+  depends_on = [google_sql_user.postgres]
   for_each = {for entry in local.columns_to_stream : "${entry.schema}.${entry.table}" => entry}
 
   database    = var.database_name
@@ -75,11 +77,13 @@ resource "postgresql_grant" "sql_user_permissions" {
 }
 
 resource "postgresql_grant_role" "replicator_grant" {
-  role       = google_sql_user.sql_user.name
+  depends_on = [google_sql_user.postgres]
+  role       = google_sql_user.sql_user_datastream.name
   grant_role = postgresql_role.sql_replication_role.name
 }
 
 resource "postgresql_publication" "publication" {
+  depends_on = [google_sql_user.postgres]
   name   = var.publication_name
   tables = distinct(flatten([
     for schema, tables in var.schemas_to_stream : [
@@ -89,6 +93,7 @@ resource "postgresql_publication" "publication" {
 }
 
 resource "postgresql_replication_slot" "default" {
+  depends_on = [google_sql_user.postgres]
   name   = var.replication_slot_name
   plugin = var.replication_plugin_name
 }
@@ -102,7 +107,7 @@ resource "google_datastream_connection_profile" "source" {
     hostname = data.google_sql_database_instance.sql_instance.public_ip_address
     port     = 5432
     database = data.google_sql_database.database.name
-    username = google_sql_user.sql_user.name
+    username = google_sql_user.sql_user_datastream.name
     password = random_password.sql_user_datastream_password.result
   }
 }
@@ -126,7 +131,7 @@ resource "google_datastream_stream" "stream" {
     source_connection_profile = google_datastream_connection_profile.source.id
     postgresql_source_config {
       publication      = postgresql_publication.publication.name
-      replication_slot = google_sql_user.sql_user.name
+      replication_slot = postgresql_replication_slot.default.name
       include_objects {
         dynamic "postgresql_schemas" {
           for_each = var.schemas_to_stream
