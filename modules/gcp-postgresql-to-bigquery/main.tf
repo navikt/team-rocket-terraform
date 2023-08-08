@@ -105,7 +105,7 @@ resource "postgresql_publication" "publication" {
 }
 
 resource "postgresql_replication_slot" "default" {
-  depends_on = [google_sql_user.postgres]
+  depends_on = [postgresql_grant_role.superuser_grant]
   name   = var.replication_slot_name
   plugin = var.replication_plugin_name
 }
