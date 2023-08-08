@@ -38,7 +38,7 @@ resource "random_password" "sql_user_datastream_password" {
   length = 42
 }
 
-resource "google_sql_user" "sql_user_datastream" {
+resource "google_sql_user" "datastream" {
   name     = "bigquery-datastream"
   password = random_password.sql_user_datastream_password.result
   instance = data.google_sql_database_instance.sql_instance.name
@@ -48,6 +48,12 @@ resource "postgresql_role" "sql_replication_role" {
   depends_on = [google_sql_user.postgres]
   name        = "replicator"
   replication = true
+}
+
+resource "postgresql_role" "sql_superuser_role" {
+  depends_on = [google_sql_user.postgres]
+  name        = "superuser"
+  superuser = true
 }
 
 locals {
@@ -78,8 +84,14 @@ resource "postgresql_grant" "sql_user_permissions" {
 
 resource "postgresql_grant_role" "replicator_grant" {
   depends_on = [google_sql_user.postgres]
-  role       = google_sql_user.sql_user_datastream.name
+  role       = google_sql_user.datastream.name
   grant_role = postgresql_role.sql_replication_role.name
+}
+
+resource "postgresql_grant_role" "superuser_grant" {
+  depends_on = [google_sql_user.postgres]
+  role       = google_sql_user.postgres.name
+  grant_role = postgresql_role.sql_superuser_role.name
 }
 
 resource "postgresql_publication" "publication" {
@@ -99,6 +111,7 @@ resource "postgresql_replication_slot" "default" {
 }
 
 resource "google_datastream_connection_profile" "source" {
+  depends_on = [postgresql_replication_slot.default, postgresql_publication.publication]
   display_name          = "Source (PostgreSQL)"
   location              = data.google_sql_database_instance.sql_instance.region
   connection_profile_id = "source"
@@ -107,7 +120,7 @@ resource "google_datastream_connection_profile" "source" {
     hostname = data.google_sql_database_instance.sql_instance.public_ip_address
     port     = 5432
     database = data.google_sql_database.database.name
-    username = google_sql_user.sql_user_datastream.name
+    username = google_sql_user.datastream.name
     password = random_password.sql_user_datastream_password.result
   }
 }
