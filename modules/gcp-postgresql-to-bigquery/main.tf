@@ -112,9 +112,9 @@ resource "postgresql_replication_slot" "default" {
 
 resource "google_datastream_connection_profile" "source" {
   depends_on = [postgresql_replication_slot.default, postgresql_publication.publication]
-  display_name          = "Source (PostgreSQL)"
+  display_name          = "${var.database_name} source (PostgreSQL)"
   location              = data.google_sql_database_instance.sql_instance.region
-  connection_profile_id = "source"
+  connection_profile_id = "${var.database_name}-source"
 
   postgresql_profile {
     hostname = data.google_sql_database_instance.sql_instance.public_ip_address
@@ -126,18 +126,18 @@ resource "google_datastream_connection_profile" "source" {
 }
 
 resource "google_datastream_connection_profile" "destination" {
-  display_name          = "Destination (BigQuery)"
+  display_name          = "${var.database_name} destination (BigQuery)"
   location              = data.google_sql_database_instance.sql_instance.region
-  connection_profile_id = "destination"
+  connection_profile_id = "${var.database_name}-destination"
 
   bigquery_profile {
   }
 }
 
 resource "google_datastream_stream" "stream" {
-  display_name  = "PostgreSQL to BigQuery Stream"
+  display_name  = "${var.database_name} (PostgreSQL) to BigQuery"
   location      = data.google_sql_database_instance.sql_instance.region
-  stream_id     = "stream"
+  stream_id     = "${var.database_name}-to-bigquery-stream"
   desired_state = "RUNNING"
 
   source_config {
