@@ -85,7 +85,7 @@ resource "postgresql_grant_role" "replicator_grant" {
 }
 
 resource "postgresql_publication" "default" {
-  depends_on = [google_sql_user.admin]
+  depends_on = [postgresql_grant.sql_user_permissions]
   name       = var.publication_name
   tables     = distinct(flatten([
     for schema, tables in var.schemas_to_stream : [
@@ -95,7 +95,7 @@ resource "postgresql_publication" "default" {
 }
 
 resource "postgresql_replication_slot" "default" {
-  depends_on = [google_sql_user.admin]
+  depends_on = [postgresql_grant.sql_user_permissions]
   name       = var.replication_slot_name
   plugin     = var.replication_plugin_name
 }
