@@ -33,6 +33,11 @@ variable "publication_name" {
   type = string
 }
 
+variable "publication_owner" {
+  description = "The username of the database user that should own the publication."
+  type = string
+}
+
 variable "replication_slot_name" {
   description = "The name of the replication slot that should be created."
   type = string

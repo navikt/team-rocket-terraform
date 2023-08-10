@@ -92,7 +92,7 @@ resource "postgresql_grant_role" "replicator_replicator" {
 resource "postgresql_publication" "default" {
   #  depends_on = [postgresql_grant.sql_user_permissions]
   name   = var.publication_name
-  owner  = var.database_name
+  owner  = var.publication_owner
   tables = distinct(flatten([
     for schema, tables in var.schemas_to_stream : [
       for table, columns in tables : "${schema}.${table}"
