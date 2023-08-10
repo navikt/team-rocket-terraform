@@ -79,6 +79,11 @@ locals {
 #  privileges  = ["SELECT"]
 #}
 
+resource "postgresql_grant_role" "replicator_admin" {
+  role       = google_sql_user.admin.name
+  grant_role = postgresql_role.sql_replication_role.name
+}
+
 resource "postgresql_grant_role" "replicator_grant" {
   role       = google_sql_user.replicator.name
   grant_role = postgresql_role.sql_replication_role.name
