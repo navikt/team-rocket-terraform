@@ -79,12 +79,12 @@ locals {
 #  privileges  = ["SELECT"]
 #}
 
-resource "postgresql_grant_role" "replicator_admin" {
+resource "postgresql_grant_role" "admin_replicator" {
   role       = google_sql_user.admin.name
   grant_role = postgresql_role.sql_replication_role.name
 }
 
-resource "postgresql_grant_role" "replicator_grant" {
+resource "postgresql_grant_role" "replicator_replicator" {
   role       = google_sql_user.replicator.name
   grant_role = postgresql_role.sql_replication_role.name
 }
@@ -100,7 +100,7 @@ resource "postgresql_publication" "default" {
 }
 
 resource "postgresql_replication_slot" "default" {
-  depends_on = [postgresql_grant_role.replicator_grant]
+  depends_on = [postgresql_grant_role.admin_replicator, postgresql_grant_role.replicator_replicator]
   name       = var.replication_slot_name
   plugin     = var.replication_plugin_name
 }
