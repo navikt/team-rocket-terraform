@@ -67,17 +67,17 @@ locals {
   ]))
 }
 
-resource "postgresql_grant" "sql_user_permissions" {
-  for_each = {for entry in local.columns_to_stream : "${entry.schema}.${entry.table}" => entry}
-
-  database    = var.database_name
-  role        = postgresql_role.sql_replication_role.name
-  object_type = "column"
-  schema      = each.value.schema
-  objects     = [each.value.table]
-  columns     = each.value.columns
-  privileges  = ["SELECT"]
-}
+#resource "postgresql_grant" "sql_user_permissions" {
+#  for_each = {for entry in local.columns_to_stream : "${entry.schema}.${entry.table}" => entry}
+#
+#  database    = var.database_name
+#  role        = postgresql_role.sql_replication_role.name
+#  object_type = "column"
+#  schema      = each.value.schema
+#  objects     = [each.value.table]
+#  columns     = each.value.columns
+#  privileges  = ["SELECT"]
+#}
 
 resource "postgresql_grant_role" "replicator_grant" {
   role       = google_sql_user.replicator.name
@@ -85,7 +85,7 @@ resource "postgresql_grant_role" "replicator_grant" {
 }
 
 resource "postgresql_publication" "default" {
-  depends_on = [postgresql_grant.sql_user_permissions]
+#  depends_on = [postgresql_grant.sql_user_permissions]
   name       = var.publication_name
   tables     = distinct(flatten([
     for schema, tables in var.schemas_to_stream : [
@@ -95,7 +95,7 @@ resource "postgresql_publication" "default" {
 }
 
 resource "postgresql_replication_slot" "default" {
-  depends_on = [postgresql_grant.sql_user_permissions]
+  depends_on = [postgresql_grant_role.replicator_grant]
   name       = var.replication_slot_name
   plugin     = var.replication_plugin_name
 }
