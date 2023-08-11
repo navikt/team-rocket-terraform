@@ -89,16 +89,16 @@ resource "postgresql_grant_role" "replicator_replicator" {
   grant_role = postgresql_role.sql_replication_role.name
 }
 
-resource "postgresql_publication" "default" {
-  #  depends_on = [postgresql_grant.sql_user_permissions]
-  name   = var.publication_name
-  owner  = var.publication_owner
-  tables = distinct(flatten([
-    for schema, tables in var.schemas_to_stream : [
-      for table, columns in tables : "${schema}.${table}"
-    ]
-  ]))
-}
+#resource "postgresql_publication" "default" {
+#  depends_on = [postgresql_grant.sql_user_permissions]
+#  name   = var.publication_name
+#  owner  = var.publication_owner
+#  tables = distinct(flatten([
+#    for schema, tables in var.schemas_to_stream : [
+#      for table, columns in tables : "${schema}.${table}"
+#    ]
+#  ]))
+#}
 
 resource "postgresql_replication_slot" "default" {
   depends_on = [postgresql_grant_role.admin_replicator, postgresql_grant_role.replicator_replicator]
@@ -107,7 +107,8 @@ resource "postgresql_replication_slot" "default" {
 }
 
 resource "google_datastream_connection_profile" "source" {
-  depends_on            = [postgresql_replication_slot.default, postgresql_publication.default]
+  depends_on            = [postgresql_replication_slot.default]
+#  depends_on            = [postgresql_replication_slot.default, postgresql_publication.default]
   display_name          = "${var.database_name} source (PostgreSQL)"
   location              = data.google_sql_database_instance.sql_instance.region
   connection_profile_id = "${var.database_name}-source"
@@ -139,8 +140,8 @@ resource "google_datastream_stream" "stream" {
   source_config {
     source_connection_profile = google_datastream_connection_profile.source.id
     postgresql_source_config {
-      publication      = postgresql_publication.default.name
-      replication_slot = postgresql_replication_slot.default.name
+      publication      = var.publication_name
+      replication_slot = var.replication_slot_name
       include_objects {
         dynamic "postgresql_schemas" {
           for_each = var.schemas_to_stream
