@@ -129,17 +129,17 @@ resource "google_datastream_private_connection" "reverse_proxy_vpc" {
   }
 }
 
-resource "google_compute_firewall" "allow_tcp_cloud_sql" {
-  name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream-tcp"
-  network       = google_compute_network.reverse_proxy_vpc.name
-  direction     = "INGRESS"
-  source_ranges = [google_datastream_private_connection.reverse_proxy_vpc.vpc_peering_config.0.subnet]
-
-  allow {
-    protocol = "tcp"
-    ports    = [5432]
-  }
-}
+#resource "google_compute_firewall" "allow_tcp_cloud_sql" {
+#  name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream-tcp"
+#  network       = google_compute_network.reverse_proxy_vpc.name
+#  direction     = "INGRESS"
+#  source_ranges = [google_datastream_private_connection.reverse_proxy_vpc.vpc_peering_config.0.subnet]
+#
+#  allow {
+#    protocol = "tcp"
+#    ports    = [5432]
+#  }
+#}
 
 module "cloud_sql_auth_proxy_container_datastream" {
   source         = "terraform-google-modules/container-vm/google"
