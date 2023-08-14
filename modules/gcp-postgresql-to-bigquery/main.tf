@@ -157,7 +157,7 @@ module "cloud_sql_auth_proxy_container_datastream" {
 }
 
 resource "google_compute_instance" "reverse_proxy" {
-  name         = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream-reverse-proxy"
+  name         = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-ds-proxy"
   machine_type = "e2-medium"
   zone         = var.reverse_proxy_zone
 
