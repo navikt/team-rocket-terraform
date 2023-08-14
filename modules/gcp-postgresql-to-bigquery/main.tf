@@ -196,7 +196,7 @@ resource "google_datastream_connection_profile" "source" {
   connection_profile_id = "${var.database_name}-source"
 
   postgresql_profile {
-    hostname = data.google_sql_database_instance.sql_instance.public_ip_address
+    hostname = google_compute_instance.reverse_proxy.network_interface[0].network_ip
     port     = 5432
     database = data.google_sql_database.database.name
     username = google_sql_user.replicator.name
