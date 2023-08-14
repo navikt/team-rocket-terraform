@@ -106,9 +106,91 @@ resource "postgresql_replication_slot" "default" {
   plugin     = var.replication_plugin_name
 }
 
+resource "google_compute_network" "reverse_proxy_vpc" {
+  name = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream"
+}
+
+resource "google_compute_global_address" "reverse_proxy_vpc" {
+  name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream"
+  address_type  = "INTERNAL"
+  purpose       = "VPC_PEERING"
+  network       = google_compute_network.reverse_proxy_vpc.id
+  prefix_length = 20
+}
+
+resource "google_datastream_private_connection" "reverse_proxy_vpc" {
+  display_name          = "Between VPCs for ${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream and Datastream"
+  private_connection_id = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream"
+  location              = data.google_sql_database_instance.sql_instance.region
+
+  vpc_peering_config {
+    vpc    = google_compute_network.reverse_proxy_vpc.id
+    subnet = "10.2.0.0/29"
+  }
+}
+
+resource "google_compute_firewall" "allow_tcp_cloud_sql" {
+  name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream-tcp"
+  network       = google_compute_network.reverse_proxy_vpc.id
+  direction     = "INGRESS"
+  source_ranges = [google_datastream_private_connection.reverse_proxy_vpc.vpc_peering_config.0.subnet]
+
+  allow {
+    protocol = "tcp"
+    ports    = [5432]
+  }
+}
+
+module "cloud_sql_auth_proxy_container_datastream" {
+  source         = "terraform-google-modules/container-vm/google"
+  version        = "3.1.0"
+  cos_image_name = "cos-101-17162-279-6" # https://endoflife.date/cos
+  container      = {
+    image   = "eu.gcr.io/cloudsql-docker/gce-proxy:1.33.8"
+    command = ["/cloud_sql_proxy"]
+    args    = [
+      "-instances=${data.google_sql_database_instance.sql_instance.connection_name}=tcp:0.0.0.0:5432",
+      "-ip_address_types=PRIVATE"
+    ]
+  }
+  restart_policy = "Always"
+}
+
+resource "google_compute_instance" "reverse_proxy" {
+  name         = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream-reverse-proxy"
+  machine_type = "e2-medium"
+  zone         = var.reverse_proxy_zone
+
+  boot_disk {
+    initialize_params {
+      image = module.cloud_sql_auth_proxy_container_datastream.source_image
+    }
+  }
+
+  network_interface {
+    network = google_compute_network.reverse_proxy_vpc.name
+    access_config {
+    }
+  }
+
+  service_account {
+    scopes = ["cloud-platform"]
+  }
+
+  metadata = {
+    gce-container-declarations = module.cloud_sql_auth_proxy_container_datastream.metadata_value
+    google-logging-enabled     = "true"
+    google-monitoring-enabled  = "true"
+  }
+
+  labels = {
+    container-vm = module.cloud_sql_auth_proxy_container_datastream.vm_container_label
+  }
+}
+
 resource "google_datastream_connection_profile" "source" {
   depends_on            = [postgresql_replication_slot.default]
-#  depends_on            = [postgresql_replication_slot.default, postgresql_publication.default]
+  #  depends_on            = [postgresql_replication_slot.default, postgresql_publication.default]
   display_name          = "${var.database_name} source (PostgreSQL)"
   location              = data.google_sql_database_instance.sql_instance.region
   connection_profile_id = "${var.database_name}-source"
@@ -168,7 +250,7 @@ resource "google_datastream_stream" "stream" {
   destination_config {
     destination_connection_profile = google_datastream_connection_profile.destination.id
     bigquery_destination_config {
-      data_freshness = "900s"
+      data_freshness = "3600s"
       source_hierarchy_datasets {
         dataset_template {
           location = data.google_sql_database_instance.sql_instance.region

@@ -48,3 +48,7 @@ variable "replication_plugin_name" {
   type = string
   default = "pgoutput"
 }
+
+variable "reverse_proxy_zone" {
+  description = "The GCP zone where the reverse proxy between "
+}
