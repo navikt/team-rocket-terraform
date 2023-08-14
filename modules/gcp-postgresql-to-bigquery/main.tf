@@ -119,7 +119,7 @@ resource "google_compute_global_address" "reverse_proxy_vpc" {
 }
 
 resource "google_datastream_private_connection" "reverse_proxy_vpc" {
-  display_name          = "Between VPCs for ${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream and Datastream"
+  display_name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream"
   private_connection_id = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream"
   location              = data.google_sql_database_instance.sql_instance.region
 
