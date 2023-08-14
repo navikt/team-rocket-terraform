@@ -202,6 +202,10 @@ resource "google_datastream_connection_profile" "source" {
     username = google_sql_user.replicator.name
     password = random_password.sql_user_replicator_password.result
   }
+
+  private_connectivity {
+    private_connection = google_datastream_private_connection.reverse_proxy_vpc.id
+  }
 }
 
 resource "google_datastream_connection_profile" "destination" {
