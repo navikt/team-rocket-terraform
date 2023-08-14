@@ -30,6 +30,12 @@ resource "google_sql_user" "admin" {
   instance = data.google_sql_database_instance.sql_instance.name
 }
 
+resource "google_sql_user" "deleteme" {
+  name     = "deleteme"
+  password = random_password.sql_user_admin_password.result
+  instance = data.google_sql_database_instance.sql_instance.name
+}
+
 output "database_username" {
   value = google_sql_user.admin.name
 }
