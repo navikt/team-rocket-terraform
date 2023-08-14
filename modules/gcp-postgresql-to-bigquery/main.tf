@@ -36,6 +36,11 @@ resource "google_sql_user" "deleteme" {
   instance = data.google_sql_database_instance.sql_instance.name
 }
 
+resource "postgresql_grant_role" "deleteme_replicator" {
+  role       = google_sql_user.deleteme.name
+  grant_role = postgresql_role.sql_replication_role.name
+}
+
 output "database_username" {
   value = google_sql_user.admin.name
 }
