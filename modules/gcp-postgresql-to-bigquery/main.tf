@@ -30,17 +30,6 @@ resource "google_sql_user" "admin" {
   instance = data.google_sql_database_instance.sql_instance.name
 }
 
-resource "google_sql_user" "deleteme" {
-  name     = "deleteme"
-  password = random_password.sql_user_admin_password.result
-  instance = data.google_sql_database_instance.sql_instance.name
-}
-
-resource "postgresql_grant_role" "deleteme_replicator" {
-  role       = google_sql_user.deleteme.name
-  grant_role = postgresql_role.sql_replication_role.name
-}
-
 output "database_username" {
   value = google_sql_user.admin.name
 }
@@ -53,15 +42,11 @@ resource "random_password" "sql_user_replicator_password" {
   length = 42
 }
 
-resource "google_sql_user" "replicator" {
-  name     = "bigquery-datastream-replicator"
-  password = random_password.sql_user_replicator_password.result
-  instance = data.google_sql_database_instance.sql_instance.name
-}
-
 resource "postgresql_role" "sql_replication_role" {
   depends_on  = [google_sql_user.admin]
-  name        = "replicator"
+  name        = "bigquery-datastream-replicator"
+  password    = random_password.sql_user_replicator_password.result
+  login       = true
   replication = true
 }
 
@@ -95,11 +80,6 @@ resource "postgresql_grant_role" "admin_replicator" {
   grant_role = postgresql_role.sql_replication_role.name
 }
 
-resource "postgresql_grant_role" "replicator_replicator" {
-  role       = google_sql_user.replicator.name
-  grant_role = postgresql_role.sql_replication_role.name
-}
-
 #resource "postgresql_publication" "default" {
 #  depends_on = [postgresql_grant.sql_user_permissions]
 #  name   = var.publication_name
@@ -112,7 +92,7 @@ resource "postgresql_grant_role" "replicator_replicator" {
 #}
 
 resource "postgresql_replication_slot" "default" {
-  depends_on = [postgresql_grant_role.admin_replicator, postgresql_grant_role.replicator_replicator]
+  depends_on = [postgresql_grant_role.admin_replicator, postgresql_role.sql_replication_role]
   name       = var.replication_slot_name
   plugin     = var.replication_plugin_name
 }
@@ -210,7 +190,7 @@ resource "google_datastream_connection_profile" "source" {
     hostname = google_compute_instance.reverse_proxy.network_interface[0].network_ip
     port     = 5432
     database = data.google_sql_database.database.name
-    username = google_sql_user.replicator.name
+    username = postgresql_role.sql_replication_role.name
     password = random_password.sql_user_replicator_password.result
   }
 
