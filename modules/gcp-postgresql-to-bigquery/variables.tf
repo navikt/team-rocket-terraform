@@ -1,54 +1,57 @@
 variable "sql_instance_name" {
   description = "The name of the SQL instance containing the database to be used as the source for the Datastream."
-  type = string
+  type        = string
 }
 
 variable "database_name" {
   description = "The name of the database to connect to."
-  type = string
+  type        = string
 }
 
 variable "schemas_to_stream" {
   description = "The schemas, tables and columns that should be streamed. Anything else will be ignored."
-  type = map(map(list(string)))
+  type        = map(map(list(string)))
 
   validation {
-    condition = length(var.schemas_to_stream) > 0
+    condition     = length(var.schemas_to_stream) > 0
     error_message = "At least one schema must be provided"
   }
 
   validation {
-    condition = !contains([for schema, tables in var.schemas_to_stream : length(tables)], 0)
+    condition     = !contains([for schema, tables in var.schemas_to_stream : length(tables)], 0)
     error_message = "At least one table must be listed under schema"
   }
 
   validation {
-    condition = !contains(flatten([for schema, tables in var.schemas_to_stream : [for table, columns in tables : length(columns)]]), 0)
+    condition     = !contains(flatten([
+      for schema, tables in var.schemas_to_stream :[for table, columns in tables : length(columns)]
+    ]), 0)
     error_message = "At least one column must be listed under table"
   }
 }
 
 variable "publication_name" {
   description = "The name of the publication."
-  type = string
+  type        = string
 }
 
 variable "publication_owner" {
   description = "The username of the database user that should own the publication."
-  type = string
+  type        = string
 }
 
 variable "replication_slot_name" {
   description = "The name of the replication slot that should be created."
-  type = string
+  type        = string
 }
 
 variable "replication_plugin_name" {
   description = "The name of the logical decoding plugin to use for the replication."
-  type = string
-  default = "pgoutput"
+  type        = string
+  default     = "pgoutput"
 }
 
 variable "reverse_proxy_zone" {
-  description = "The GCP zone where the reverse proxy between "
+  description = "The GCP zone where the reverse proxy should be running."
+  type        = string
 }
