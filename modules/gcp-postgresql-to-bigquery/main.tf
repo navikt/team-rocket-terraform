@@ -109,28 +109,28 @@ resource "google_compute_global_address" "reverse_proxy_vpc" {
   prefix_length = 20
 }
 
-resource "google_datastream_private_connection" "reverse_proxy_vpc" {
-  display_name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream"
-  private_connection_id = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream"
-  location              = data.google_sql_database_instance.sql_instance.region
+#resource "google_datastream_private_connection" "reverse_proxy_vpc" {
+#  display_name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream"
+#  private_connection_id = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream"
+#  location              = data.google_sql_database_instance.sql_instance.region
+#
+#  vpc_peering_config {
+#    vpc    = google_compute_network.reverse_proxy_vpc.id
+#    subnet = "10.1.0.0/29"
+#  }
+#}
 
-  vpc_peering_config {
-    vpc    = google_compute_network.reverse_proxy_vpc.id
-    subnet = "10.1.0.0/29"
-  }
-}
-
-resource "google_compute_firewall" "allow_tcp_cloud_sql" {
-  name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream-tcp"
-  network       = google_compute_network.reverse_proxy_vpc.name
-  direction     = "INGRESS"
-  source_ranges = [google_datastream_private_connection.reverse_proxy_vpc.vpc_peering_config.0.subnet]
-
-  allow {
-    protocol = "tcp"
-    ports    = ["5432"]
-  }
-}
+#resource "google_compute_firewall" "allow_tcp_cloud_sql" {
+#  name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream-tcp"
+#  network       = google_compute_network.reverse_proxy_vpc.name
+#  direction     = "INGRESS"
+#  source_ranges = [google_datastream_private_connection.reverse_proxy_vpc.vpc_peering_config.0.subnet]
+#
+#  allow {
+#    protocol = "tcp"
+#    ports    = ["5432"]
+#  }
+#}
 
 module "cloud_sql_auth_proxy_container_datastream" {
   source         = "terraform-google-modules/container-vm/google"
@@ -179,25 +179,25 @@ resource "google_compute_instance" "reverse_proxy" {
   }
 }
 
-resource "google_datastream_connection_profile" "source" {
-  depends_on            = [postgresql_replication_slot.default]
-  #  depends_on            = [postgresql_replication_slot.default, postgresql_publication.default]
-  display_name          = "${var.database_name} source (PostgreSQL)"
-  location              = data.google_sql_database_instance.sql_instance.region
-  connection_profile_id = "${var.database_name}-source"
-
-  postgresql_profile {
-    hostname = google_compute_instance.reverse_proxy.network_interface[0].network_ip
-    port     = 5432
-    database = data.google_sql_database.database.name
-    username = postgresql_role.sql_replication_role.name
-    password = random_password.sql_user_replicator_password.result
-  }
-
-  private_connectivity {
-    private_connection = google_datastream_private_connection.reverse_proxy_vpc.id
-  }
-}
+#resource "google_datastream_connection_profile" "source" {
+#  depends_on            = [postgresql_replication_slot.default]
+#  #  depends_on            = [postgresql_replication_slot.default, postgresql_publication.default]
+#  display_name          = "${var.database_name} source (PostgreSQL)"
+#  location              = data.google_sql_database_instance.sql_instance.region
+#  connection_profile_id = "${var.database_name}-source"
+#
+#  postgresql_profile {
+#    hostname = google_compute_instance.reverse_proxy.network_interface[0].network_ip
+#    port     = 5432
+#    database = data.google_sql_database.database.name
+#    username = postgresql_role.sql_replication_role.name
+#    password = random_password.sql_user_replicator_password.result
+#  }
+#
+#  private_connectivity {
+#    private_connection = google_datastream_private_connection.reverse_proxy_vpc.id
+#  }
+#}
 
 resource "google_datastream_connection_profile" "destination" {
   display_name          = "${var.database_name} destination (BigQuery)"
@@ -208,52 +208,52 @@ resource "google_datastream_connection_profile" "destination" {
   }
 }
 
-resource "google_datastream_stream" "stream" {
-  display_name  = "${var.database_name} (PostgreSQL) to BigQuery"
-  location      = data.google_sql_database_instance.sql_instance.region
-  stream_id     = "${var.database_name}-to-bigquery-stream"
-  desired_state = "RUNNING"
-
-  source_config {
-    source_connection_profile = google_datastream_connection_profile.source.id
-    postgresql_source_config {
-      publication      = var.publication_name
-      replication_slot = var.replication_slot_name
-      include_objects {
-        dynamic "postgresql_schemas" {
-          for_each = var.schemas_to_stream
-          content {
-            schema = postgresql_schemas.key
-            dynamic "postgresql_tables" {
-              for_each = postgresql_schemas.value
-              content {
-                table = postgresql_tables.key
-                dynamic "postgresql_columns" {
-                  for_each = postgresql_tables.value
-                  content {
-                    column = postgresql_columns.value
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  destination_config {
-    destination_connection_profile = google_datastream_connection_profile.destination.id
-    bigquery_destination_config {
-      data_freshness = "3600s"
-      source_hierarchy_datasets {
-        dataset_template {
-          location = data.google_sql_database_instance.sql_instance.region
-        }
-      }
-    }
-  }
-
-  backfill_all {
-  }
-}
+#resource "google_datastream_stream" "stream" {
+#  display_name  = "${var.database_name} (PostgreSQL) to BigQuery"
+#  location      = data.google_sql_database_instance.sql_instance.region
+#  stream_id     = "${var.database_name}-to-bigquery-stream"
+#  desired_state = "RUNNING"
+#
+#  source_config {
+#    source_connection_profile = google_datastream_connection_profile.source.id
+#    postgresql_source_config {
+#      publication      = var.publication_name
+#      replication_slot = var.replication_slot_name
+#      include_objects {
+#        dynamic "postgresql_schemas" {
+#          for_each = var.schemas_to_stream
+#          content {
+#            schema = postgresql_schemas.key
+#            dynamic "postgresql_tables" {
+#              for_each = postgresql_schemas.value
+#              content {
+#                table = postgresql_tables.key
+#                dynamic "postgresql_columns" {
+#                  for_each = postgresql_tables.value
+#                  content {
+#                    column = postgresql_columns.value
+#                  }
+#                }
+#              }
+#            }
+#          }
+#        }
+#      }
+#    }
+#  }
+#
+#  destination_config {
+#    destination_connection_profile = google_datastream_connection_profile.destination.id
+#    bigquery_destination_config {
+#      data_freshness = "3600s"
+#      source_hierarchy_datasets {
+#        dataset_template {
+#          location = data.google_sql_database_instance.sql_instance.region
+#        }
+#      }
+#    }
+#  }
+#
+#  backfill_all {
+#  }
+#}
