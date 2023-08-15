@@ -116,7 +116,7 @@ resource "google_datastream_private_connection" "reverse_proxy_vpc" {
 
   vpc_peering_config {
     vpc    = google_compute_network.reverse_proxy_vpc.id
-    subnet = "10.2.0.0/29"
+    subnet = "10.1.0.0/29"
   }
 }
 
@@ -128,7 +128,7 @@ resource "google_compute_firewall" "allow_tcp_cloud_sql" {
 
   allow {
     protocol = "tcp"
-    ports    = [5432]
+    ports    = ["5432"]
   }
 }
 
