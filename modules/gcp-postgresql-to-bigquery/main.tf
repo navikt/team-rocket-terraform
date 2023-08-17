@@ -148,13 +148,13 @@ module "cloud_sql_auth_proxy_container_datastream" {
 }
 
 resource "random_string" "reverse_proxy_sa_suffix" {
-  length = 4
+  length  = 4
   special = false
-  upper = false
+  upper   = false
 }
 
 resource "google_service_account" "reverse_proxy" {
-  account_id   = "datastream-proxy-${random_string.reverse_proxy_sa_suffix.result}"
+  account_id  = "datastream-proxy-${random_string.reverse_proxy_sa_suffix.result}"
   description = "The service account for the reverse proxy between Datastream and the SQL instance for ${var.database_name}"
 }
 
@@ -165,10 +165,11 @@ resource "google_project_iam_member" "reverse_proxy_sql_client" {
 }
 
 resource "google_compute_instance" "reverse_proxy" {
-  depends_on = [google_project_iam_member.reverse_proxy_sql_client]
-  name         = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-ds-proxy"
-  machine_type = "e2-medium"
-  zone         = var.reverse_proxy_zone
+  depends_on                = [google_project_iam_member.reverse_proxy_sql_client]
+  name                      = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-ds-proxy"
+  machine_type              = "e2-medium"
+  zone                      = var.reverse_proxy_zone
+  allow_stopping_for_update = true
 
   boot_disk {
     initialize_params {
