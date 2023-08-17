@@ -154,7 +154,7 @@ resource "random_string" "reverse_proxy_sa_suffix" {
 }
 
 resource "google_service_account" "reverse_proxy" {
-  account_id   = "datastream-proxy-${random_string.reverse_proxy_sa_suffix}"
+  account_id   = "datastream-proxy-${random_string.reverse_proxy_sa_suffix.result}"
   description = "The service account for the reverse proxy between Datastream and the SQL instance for ${var.database_name}"
 }
 
