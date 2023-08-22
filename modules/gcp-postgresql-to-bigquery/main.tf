@@ -133,15 +133,15 @@ resource "google_compute_firewall" "allow_tcp_cloud_sql" {
 }
 
 module "cloud_sql_auth_proxy_container_datastream" {
-  source         = "terraform-google-modules/container-vm/google"
-  version        = "3.1.0"
-  cos_image_name = "cos-101-17162-279-6" # https://endoflife.date/cos
-  container      = {
-    image   = "eu.gcr.io/cloudsql-docker/gce-proxy:1.33.8"
-    command = ["/cloud_sql_proxy"]
+  source           = "terraform-google-modules/container-vm/google"
+  version          = "3.1.0"
+  cos_project      = "debian-cloud"
+  cos_image_family = "debian-11"
+  container        = {
+    image   = "gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.1.1-alpine"
     args    = [
-      "-instances=${data.google_sql_database_instance.sql_instance.connection_name}=tcp:0.0.0.0:5432",
-      "-ip_address_types=PRIVATE"
+      "${data.google_sql_database_instance.sql_instance.connection_name}?port=5432",
+      "--address=0.0.0.0"
     ]
   }
   restart_policy = "Always"
@@ -167,7 +167,7 @@ resource "google_project_iam_member" "reverse_proxy_sql_client" {
 resource "google_compute_instance" "reverse_proxy" {
   depends_on                = [google_project_iam_member.reverse_proxy_sql_client]
   name                      = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-ds-proxy"
-  machine_type              = "e2-medium"
+  machine_type              = "n1-standard-1"
   zone                      = var.reverse_proxy_zone
   allow_stopping_for_update = true
 
@@ -205,6 +205,8 @@ resource "google_datastream_connection_profile" "source" {
   display_name          = "${var.database_name} source (PostgreSQL)"
   location              = data.google_sql_database_instance.sql_instance.region
   connection_profile_id = "${var.database_name}-source"
+
+  # bump the timeout
 
   postgresql_profile {
     hostname = google_compute_instance.reverse_proxy.network_interface[0].network_ip
