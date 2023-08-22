@@ -141,8 +141,9 @@ module "cloud_sql_auth_proxy_container_datastream" {
   container        = {
     image   = "gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.1.1-alpine"
     args    = [
-      "${data.google_sql_database_instance.sql_instance.connection_name}?port=5432",
-      "--address=0.0.0.0"
+      "--address=0.0.0.0",
+      "--port=5432",
+      data.google_sql_database_instance.sql_instance.connection_name
     ]
   }
   restart_policy = "Always"
