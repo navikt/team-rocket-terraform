@@ -177,13 +177,14 @@ resource "google_compute_instance" "reverse_proxy" {
 
   network_interface {
     network = google_compute_network.reverse_proxy_vpc.name
+    subnetwork = google_compute_network.reverse_proxy_vpc.name
     access_config {
     }
   }
 
   service_account {
     email  = google_service_account.reverse_proxy.email
-    scopes = ["cloud-platform"]
+    scopes = ["https://www.googleapis.com/auth/cloud-platform"]
   }
 
   metadata = {
@@ -203,8 +204,6 @@ resource "google_datastream_connection_profile" "source" {
   display_name          = "${var.database_name} source (PostgreSQL)"
   location              = data.google_sql_database_instance.sql_instance.region
   connection_profile_id = "${var.database_name}-source"
-
-  # bump the timeout
 
   postgresql_profile {
     hostname = google_compute_instance.reverse_proxy.network_interface[0].network_ip
