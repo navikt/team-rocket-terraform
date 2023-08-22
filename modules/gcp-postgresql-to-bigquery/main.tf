@@ -192,9 +192,9 @@ resource "google_compute_instance" "reverse_proxy" {
   }
 
   metadata = {
-    gce-container-declarations = module.cloud_sql_auth_proxy_container_datastream.metadata_value
-    google-logging-enabled     = "true"
-    google-monitoring-enabled  = "false"
+    gce-container-declaration = module.cloud_sql_auth_proxy_container_datastream.metadata_value
+    google-logging-enabled    = "true"
+    google-monitoring-enabled = "false"
   }
 
   labels = {
