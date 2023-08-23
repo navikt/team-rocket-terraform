@@ -132,12 +132,24 @@ resource "google_compute_firewall" "allow_tcp_cloud_sql" {
   }
 }
 
+resource "google_compute_firewall" "allow_ssh_cloud_sql" {
+  name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream-ssh"
+  network       = google_compute_network.reverse_proxy_vpc.name
+  direction     = "INGRESS"
+  source_ranges = ["0.0.0.0/0"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+}
+
 module "cloud_sql_auth_proxy_container_datastream" {
   source           = "terraform-google-modules/container-vm/google"
   version          = "3.1.0"
-  cos_project      = "debian-cloud"
-  cos_image_family = "debian-11"
-  cos_image_name   = "debian-11-bullseye-v20230814"
+#  cos_project      = "debian-cloud"
+#  cos_image_family = "debian-11"
+#  cos_image_name   = "debian-11-bullseye-v20230814"
   container        = {
     image   = "gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.1.1-alpine"
     args    = [
