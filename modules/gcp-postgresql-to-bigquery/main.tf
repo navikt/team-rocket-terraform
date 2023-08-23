@@ -121,7 +121,7 @@ resource "google_datastream_private_connection" "reverse_proxy_vpc" {
 }
 
 resource "google_compute_firewall" "allow_tcp_cloud_sql" {
-  name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream-tcp"
+  name          = "${var.database_name}-datastream-tcp"
   network       = google_compute_network.reverse_proxy_vpc.name
   direction     = "INGRESS"
   source_ranges = [google_datastream_private_connection.reverse_proxy_vpc.vpc_peering_config.0.subnet]
@@ -133,7 +133,7 @@ resource "google_compute_firewall" "allow_tcp_cloud_sql" {
 }
 
 resource "google_compute_firewall" "allow_ssh_cloud_sql" {
-  name          = "${data.google_sql_database_instance.sql_instance.project}-${var.database_name}-datastream-ssh"
+  name          = "${var.database_name}-datastream-ssh"
   network       = google_compute_network.reverse_proxy_vpc.name
   direction     = "INGRESS"
   source_ranges = ["0.0.0.0/0"]
