@@ -256,15 +256,15 @@ resource "google_datastream_stream" "stream" {
         dynamic "postgresql_schemas" {
           for_each = var.schemas_to_stream
           content {
-            schema = postgresql_schemas.key
+            schema = lower(postgresql_schemas.key)
             dynamic "postgresql_tables" {
               for_each = postgresql_schemas.value
               content {
-                table = postgresql_tables.key
+                table = lower(postgresql_tables.key)
                 dynamic "postgresql_columns" {
                   for_each = postgresql_tables.value
                   content {
-                    column = postgresql_columns.value
+                    column = lower(postgresql_columns.value)
                   }
                 }
               }
